@@ -10,6 +10,16 @@ void main() {
   ));
 }
 
+class TodoItem{
+  String task;
+  bool ok;
+
+  TodoItem(String task, bool ok){
+    this.task = task;
+    this.ok = ok;
+  }
+}
+
 class Home extends StatefulWidget {
   Home({Key key}) : super(key: key);
 
@@ -17,44 +27,110 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  List _toDoList = [];
+  List<TodoItem> _toDoList = [];
+  Color _cbground = Colors.greenAccent;
+  Color _ctext = Colors.white;
+  int count = 0;
+  final tfTaskDescription = TextEditingController();
+
+  void setColorTheme() {
+    setState(() {
+      switch (count) {
+        case 0:
+          _cbground = Colors.greenAccent;
+          _ctext = Colors.white;
+          break;
+        case 1:
+          _cbground = Colors.blueAccent;
+          _ctext = Colors.white;
+          break;
+        case 2:
+          _cbground = Colors.purpleAccent;
+          _ctext = Colors.white;
+          break;
+        case 3:
+          _cbground = Colors.redAccent;
+          _ctext = Colors.white;
+          break;
+      }
+      if (count < 3)
+        count++;
+      else
+        count = 0;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return scaf("Todo List ;)", Colors.greenAccent, true);
+    return scaf("Todo List ;)", true);
   }
 
   //Body
-  Scaffold scaf(String title, Color bGround, bool center_title){
+  Scaffold scaf(String title, bool centertitle) {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: bGround,
-        centerTitle: center_title,
+        backgroundColor: _cbground,
+        centerTitle: centertitle,
       ),
-      body: column_Body(),
+      body: columnBody(),
     );
   }
+
   //-Body
-  Column column_Body(){
+  Column columnBody() {
     return Column(
       children: <Widget>[
         Container(
-          padding: EdgeInsets.fromLTRB(17, 1, 1, 7),
-          child: Row(
-            children: <Widget>[
-              TextField(
-                decoration: InputDecoration(
-                  labelText: "New task",
-                  labelStyle: TextStyle(color: Colors.greenAccent),
+            padding: EdgeInsets.fromLTRB(17, 1, 1, 7),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                    child: TextField(
+                  decoration: InputDecoration(
+                    labelText: "New task",
+                    labelStyle: TextStyle(color: _cbground),
+                  ),
+                  controller: tfTaskDescription,
+                )),
+                RaisedButton(
+                  color: _cbground,
+                  child: Text("ADD"),
+                  textColor: _ctext,
+                  onPressed: () {
+                    if(tfTaskDescription.text != null && tfTaskDescription.text != ""){
+                      _toDoList.add(TodoItem(tfTaskDescription.text, false));
+                      _saveFile();
+                    }
+                  },
                 ),
-              )
-            ],
-          )
+              ],
+            )),
+        Expanded(
+          child: ListView.builder(
+              padding: EdgeInsets.only(top: 10),
+              itemCount: _toDoList.length,
+              itemBuilder: (context, index) {
+                return CheckboxListTile(
+                  title: Text(_toDoList[index].task),
+                  value: _toDoList[index].ok,
+                  secondary: CircleAvatar(
+                    child: Icon(
+                        _toDoList[index].ok ? Icons.check : Icons.error),
+                  ), onChanged: (bool value) {},
+                );
+              }),
+        ),
+        RaisedButton(
+          color: _cbground,
+          child: Text("ChangeColor"),
+          textColor: _ctext,
+          onPressed: setColorTheme,
         )
       ],
     );
   }
+
   Future<File> _getFile() async {
     final directory = await getApplicationDocumentsDirectory();
     return File("${directory.path}/data.json");
