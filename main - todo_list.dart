@@ -10,11 +10,11 @@ void main() {
   ));
 }
 
-class TodoItem{
+class TodoItem {
   String task;
   bool ok;
 
-  TodoItem(String task, bool ok){
+  TodoItem(String task, bool ok) {
     this.task = task;
     this.ok = ok;
   }
@@ -27,11 +27,22 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  List<TodoItem> _toDoList = [];
+  List _toDoList = [];
   Color _cbground = Colors.greenAccent;
   Color _ctext = Colors.white;
   int count = 0;
-  final tfTaskDescription = TextEditingController();
+  final _edDescription = TextEditingController();
+
+  void _addToDo() {
+    setState(() {
+      Map<String, dynamic> newTodo = Map();
+      newTodo["title"] = _edDescription.text;
+      _edDescription.text = "";
+      newTodo["ok"] = false;
+      _toDoList.add(newTodo);
+    });
+    // _saveFile();
+  }
 
   void setColorTheme() {
     setState(() {
@@ -91,18 +102,13 @@ class _HomeState extends State<Home> {
                     labelText: "New task",
                     labelStyle: TextStyle(color: _cbground),
                   ),
-                  controller: tfTaskDescription,
+                  controller: _edDescription,
                 )),
                 RaisedButton(
                   color: _cbground,
                   child: Text("ADD"),
                   textColor: _ctext,
-                  onPressed: () {
-                    if(tfTaskDescription.text != null && tfTaskDescription.text != ""){
-                      _toDoList.add(TodoItem(tfTaskDescription.text, false));
-                      _saveFile();
-                    }
-                  },
+                  onPressed: _addToDo,
                 ),
               ],
             )),
@@ -115,9 +121,14 @@ class _HomeState extends State<Home> {
                   title: Text(_toDoList[index].task),
                   value: _toDoList[index].ok,
                   secondary: CircleAvatar(
-                    child: Icon(
-                        _toDoList[index].ok ? Icons.check : Icons.error),
-                  ), onChanged: (bool value) {},
+                    child:
+                        Icon(_toDoList[index].ok ? Icons.check : Icons.error),
+                  ),
+                  onChanged: (bool value) {
+                    setState(() {
+                      _toDoList[index]["ok"] = value;
+                    });
+                  },
                 );
               }),
         ),
