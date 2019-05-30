@@ -29,6 +29,9 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List _toDoList = [];
+  Map<String, dynamic> _lastRemoved;
+  int _lastRemovedPos;
+
   Color _cbground = Colors.greenAccent;
   Color _cbground2 = Colors.lightGreen;
   Color _ctext = Colors.white;
@@ -47,6 +50,25 @@ class _HomeState extends State<Home> {
     });
   }
 
+  Future<Null> _refresh() async {
+    await Future.delayed(Duration(milliseconds: 700));
+
+    setState(() {
+      _toDoList.sort((a, b) {
+        if (a["ok"] && !b["ok"])
+          return 1;
+        else if (!a["ok"] && b["ok"])
+          return -1;
+        else
+          return 0;
+      });
+      _saveFile();
+    });
+    
+    _setColorTheme();
+    return null;
+  }
+
   void _toDoAdd() {
     setState(() {
       Map<String, dynamic> newTodo = Map();
@@ -54,12 +76,13 @@ class _HomeState extends State<Home> {
       _edDescription.text = "";
       newTodo["ok"] = false;
       _toDoList.add(newTodo);
-      _saveFile(false);
+      _saveFile();
     });
   }
 
-  void _deleteAll(bool del) => setState(() {
-        _saveFile(del);
+  void _deleteAll() => setState(() {
+        _toDoList = List();
+        _saveFile();
       });
 
   void _setColorTheme() {
@@ -106,34 +129,34 @@ class _HomeState extends State<Home> {
     });
   }
 
-  SimpleDialog dialog(String title) {
-    return SimpleDialog(
-      backgroundColor: _cbground,
-      title: Text(title),
-      children: <Widget>[
-        Column(
-          children: <Widget>[
-            Expanded(child: Text("")),
-            RaisedButton(
-              color: _cbground,
-              child: Text("Sim"),
-              textColor: _ctext,
-              onPressed: _pressedSim,
-            ),
-            RaisedButton(
-              color: _cbground,
-              child: Text("Não"),
-              textColor: _ctext,
-              onPressed: _pressedNao,
-            ),
-          ],
-        )
-      ],
-    );
-  }
+  // SimpleDialog dialog(String title) {
+  //   return SimpleDialog(
+  //     backgroundColor: _cbground,
+  //     title: Text(title),
+  //     children: <Widget>[
+  //       Column(
+  //         children: <Widget>[
+  //           Expanded(child: Text("")),
+  //           RaisedButton(
+  //             color: _cbground,
+  //             child: Text("Sim"),
+  //             textColor: _ctext,
+  //             onPressed: _pressedSim,
+  //           ),
+  //           RaisedButton(
+  //             color: _cbground,
+  //             child: Text("Não"),
+  //             textColor: _ctext,
+  //             onPressed: _pressedNao,
+  //           ),
+  //         ],
+  //       )
+  //     ],
+  //   );
+  // }
 
-  void _pressedSim() => _deleteAll(true);
-  void _pressedNao() => _deleteAll(false);
+  // void _pressedSim() => _deleteAll(true);
+  // void _pressedNao() => _deleteAll(false);
 
   @override
   Widget build(BuildContext context) {
@@ -177,10 +200,13 @@ class _HomeState extends State<Home> {
               ],
             )),
         Expanded(
-          child: ListView.builder(
-              padding: EdgeInsets.only(top: 10),
-              itemCount: _toDoList.length,
-              itemBuilder: buildItem),
+          child: RefreshIndicator(
+            onRefresh: _refresh,
+            child: ListView.builder(
+                padding: EdgeInsets.only(top: 10),
+                itemCount: _toDoList.length,
+                itemBuilder: buildItem),
+          ),
         ),
         Row(
           children: <Widget>[
@@ -194,7 +220,7 @@ class _HomeState extends State<Home> {
               color: _cbground,
               child: Text("Delete All"),
               textColor: _ctext,
-              onPressed: () => dialog("Delete All").build(context),
+              onPressed: _deleteAll,
             ),
           ],
         ),
@@ -204,32 +230,56 @@ class _HomeState extends State<Home> {
 
   Widget buildItem(context, index) {
     return Dismissible(
-      key: Key(DateTime.now().millisecondsSinceEpoch.toString()),
-      background: Container(
-        color: _cbground2,
-        child: Align(
-          alignment: Alignment(-0.9, 0.0),
-          child: Icon(Icons.delete, color: _ctext),
+        key: Key(DateTime.now().millisecondsSinceEpoch.toString()),
+        background: Container(
+          color: _cbground2,
+          child: Align(
+            alignment: Alignment(-0.9, 0.0),
+            child: Icon(Icons.delete, color: _ctext),
+          ),
         ),
-      ),
-      direction: DismissDirection.startToEnd,
-      child: CheckboxListTile(
-        title: Text(_toDoList[index]["title"]),
-        value: _toDoList[index]["ok"],
-        activeColor: _cbground,
-        secondary: CircleAvatar(
-          child: Icon(_toDoList[index]["ok"] ? Icons.check : Icons.error),
-          foregroundColor: _ctext,
-          backgroundColor: _cbground,
+        direction: DismissDirection.startToEnd,
+        child: CheckboxListTile(
+          title: Text(_toDoList[index]["title"]),
+          value: _toDoList[index]["ok"],
+          activeColor: _cbground,
+          secondary: CircleAvatar(
+            child: Icon(_toDoList[index]["ok"] ? Icons.check : Icons.error),
+            foregroundColor: _ctext,
+            backgroundColor: _cbground,
+          ),
+          onChanged: (bool value) {
+            setState(() {
+              _toDoList[index]["ok"] = value;
+              _saveFile();
+            });
+          },
         ),
-        onChanged: (bool value) {
+        onDismissed: (direction) {
           setState(() {
-            _toDoList[index]["ok"] = value;
-            _saveFile(false);
+            _lastRemoved = Map.from(_toDoList[index]);
+            _lastRemovedPos = index;
+            _toDoList.removeAt(index);
+            _saveFile();
+
+            final snack = SnackBar(
+              content: Text("Task \"${_lastRemoved["title"]}\" removed!"),
+              action: SnackBarAction(
+                label: "Desfazer",
+                onPressed: () {
+                  setState(() {
+                    _toDoList.insert(_lastRemovedPos, _lastRemoved);
+                    _saveFile();
+                  });
+                },
+              ),
+              duration: Duration(seconds: 2),
+            );
+
+            Scaffold.of(context).removeCurrentSnackBar();
+            Scaffold.of(context).showSnackBar(snack);
           });
-        },
-      ),
-    );
+        });
   }
 
   Future<File> _getFile() async {
@@ -237,8 +287,7 @@ class _HomeState extends State<Home> {
     return File("${directory.path}/data.json");
   }
 
-  Future<File> _saveFile(bool delall) async {
-    if (delall) _toDoList = List();
+  Future<File> _saveFile() async {
     String data = json.encode(_toDoList);
     final file = await _getFile();
     return file.writeAsString(data);
