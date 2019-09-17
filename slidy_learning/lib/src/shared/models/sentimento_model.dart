@@ -1,9 +1,7 @@
-import 'package:flutter/widgets.dart';
+class SentimentoModel {
+  double sentimento;
+  String title;
+  String subtitle;
 
-class SentimentoModel{
-  final double sentimento;
-  final String title;
-  final String subtitle;
-
-  SentimentoModel({@required this.sentimento, @required this.title, @required this.subtitle});
+  SentimentoModel({this.sentimento, this.title, this.subtitle});
 }

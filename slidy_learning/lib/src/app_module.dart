@@ -1,4 +1,4 @@
-import 'package:slidy_learning/src/shared/blocs/sentimento_bloc.dart';
+import 'package:slidy_learning/src/shared/blocs/shared_bloc.dart';
 import 'package:bloc_pattern/bloc_pattern.dart';
 import 'package:flutter/material.dart';
 import 'package:slidy_learning/src/app_widget.dart';
@@ -7,7 +7,7 @@ import 'package:slidy_learning/src/app_bloc.dart';
 class AppModule extends ModuleWidget {
   @override
   List<Bloc> get blocs => [
-        Bloc((i) => SentimentoBloc()),
+        Bloc((i) => SharedBloc()),
         Bloc((i) => AppBloc()),
       ];
 
